@@ -25,7 +25,7 @@ public class ParallelDownloader {
         long fileSize = getFileSize(url);
         System.out.println("File size: " + fileSize + " bytes");
 
-        // Pre-allocate the file on disk
+        // here we set the size of the file beforehand
         try (RandomAccessFile file = new RandomAccessFile(destinationPath, "rw")) {
             file.setLength(fileSize);
         }
@@ -37,20 +37,19 @@ public class ParallelDownloader {
 
         for (int i = 0; i < numThreads; i++) {
             long startByte = i * chunkSize;
-            // The last thread gets the remainder of the file
+            // last thread will get what is left
             long endByte = (i == numThreads - 1) ? fileSize - 1 : (startByte + chunkSize - 1);
 
-            tasks.add(new Intellij_Task.DownloadTask(url, destinationPath, startByte, endByte, i, httpClient));
+            tasks.add(new DownloadTask(url, destinationPath, startByte, endByte, i, httpClient));
         }
 
-        System.out.println("Starting download with " + numThreads + " threads...");
-        // Invoke all tasks and wait for them to finish
+        // start all tasks simulatneously
         executor.invokeAll(tasks);
         executor.shutdown();
-        System.out.println("Download complete: " + destinationPath);
     }
 
     private long getFileSize(String url) throws IOException, InterruptedException {
+        // we use that HEAD request to get the size
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .method("HEAD", HttpRequest.BodyPublishers.noBody())
@@ -59,8 +58,23 @@ public class ParallelDownloader {
         HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
 
         String contentLengthStr = response.headers().firstValue("Content-Length")
-                .orElseThrow(() -> new RuntimeException("Server did not return Content-Length header"));
+                .orElseThrow(() -> new RuntimeException("There is no content length header"));
 
         return Long.parseLong(contentLengthStr);
+    }
+
+    public static void main(String[] args) {
+        String url = "http://localhost:8080/my-test-file.txt"; // we get the file from the server
+        String destination = "downloaded_file.txt";   // we save it here
+        int threads = 4;
+
+        ParallelDownloader downloader = new ParallelDownloader();
+
+        try {
+            downloader.download(url, destination, threads);
+        } catch (Exception e) {
+            System.err.println("Download failed: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

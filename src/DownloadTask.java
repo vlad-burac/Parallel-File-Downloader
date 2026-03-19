@@ -33,11 +33,11 @@ public class DownloadTask implements Callable<Void> {
 
         HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
-        // Write the specific chunk to the correct location in the file
+        // write the specific chunk to the correct location in the file
         try (InputStream is = response.body();
              RandomAccessFile file = new RandomAccessFile(destinationPath, "rw")) {
 
-            file.seek(startByte); // Jump to this thread's designated starting point
+            file.seek(startByte); // we jump to where we need
 
             byte[] buffer = new byte[8192];
             int bytesRead;

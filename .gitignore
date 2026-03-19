@@ -1,7 +1,13 @@
+server-data/
+downloaded_file.txt
 ### IntelliJ IDEA ###
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+.idea/
+*.iml
+out/
+target/
 
 ### Eclipse ###
 .apt_generated
